@@ -1,10 +1,10 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { Category, Question, QuizResults, AppView, ReviewerNote } from './types.ts';
-import { fetchQuestions, fetchReviewerNotes } from './geminiService.ts';
-import QuestionCard from './components/QuestionCard.tsx';
-import ResultsView from './components/ResultsView.tsx';
-import ReviewerView from './components/ReviewerView.tsx';
-import StrategiesView from './components/StrategiesView.tsx';
+import { Category, Question, QuizResults, AppView, ReviewerNote } from './types';
+import { fetchQuestions, fetchReviewerNotes } from './geminiService';
+import QuestionCard from './components/QuestionCard';
+import ResultsView from './components/ResultsView';
+import ReviewerView from './components/ReviewerView';
+import StrategiesView from './components/StrategiesView';
 
 const FULL_MOCK_TIME = (3 * 3600) + (10 * 60); // 3h 10m
 const SUBTEST_TIME = 60 * 60; // 1 hour for 50 items

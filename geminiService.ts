@@ -1,13 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { Category, Question, ReviewerNote } from "./types.ts";
+import { Category, Question, ReviewerNote } from "./types";
 
-// Function to get AI instance safely, ensuring process.env is accessed at runtime
-const getAI = () => {
-  if (!process.env.API_KEY) {
-    console.warn("API_KEY is not defined in the environment.");
-  }
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
-};
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const questionSchema = {
   type: Type.ARRAY,
@@ -42,7 +36,6 @@ const noteSchema = {
 };
 
 export const fetchQuestions = async (count: number = 170, specificCategory?: Category): Promise<Question[]> => {
-  const ai = getAI();
   let prompt = "";
   if (specificCategory) {
     prompt = `
@@ -108,7 +101,6 @@ export const fetchQuestions = async (count: number = 170, specificCategory?: Cat
 };
 
 export const fetchReviewerNotes = async (): Promise<ReviewerNote[]> => {
-  const ai = getAI();
   const prompt = `
     Create a comprehensive study guide for the 2026 Philippine Civil Service Professional Examination.
     Provide summary notes for each of the 4 categories: Numerical, Analytical, Verbal, and General Information.

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { QuizResults, Category, Question } from '../types.ts';
+import { QuizResults, Category, Question } from '../types';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
