@@ -1,8 +1,13 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
-import { Category, Question, ReviewerNote } from "./types";
+import { Category, Question, ReviewerNote } from "./types.ts";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Function to get AI instance safely, ensuring process.env is accessed at runtime
+const getAI = () => {
+  if (!process.env.API_KEY) {
+    console.warn("API_KEY is not defined in the environment.");
+  }
+  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+};
 
 const questionSchema = {
   type: Type.ARRAY,
@@ -37,6 +42,7 @@ const noteSchema = {
 };
 
 export const fetchQuestions = async (count: number = 170, specificCategory?: Category): Promise<Question[]> => {
+  const ai = getAI();
   let prompt = "";
   if (specificCategory) {
     prompt = `
@@ -46,22 +52,22 @@ export const fetchQuestions = async (count: number = 170, specificCategory?: Cat
       Technical Requirements:
       - Language: English.
       - Quality: Challenging, Professional Civil Service standard.
-      - Output: A single JSON array containing all ${count} items.
+      - Output: A single JSON array containing all items.
     `;
   } else {
     prompt = `
-      Generate a full-length, ${count}-item Mock Philippine Civil Service Professional Examination (2026 Edition).
+      Generate a full-length Mock Philippine Civil Service Professional Examination (2026 Edition).
+      Return ${count} items.
       
-      You MUST return EXACTLY ${count} items ARRANGE IN THIS SPECIFIC ORDER:
-      1. Items 1-40: Numerical Ability.
-      2. Items 41-80: Analytical Ability.
-      3. Items 81-140: Verbal Ability.
-      4. Items 141-170: General Information.
+      Required Structure:
+      - Numerical Ability
+      - Analytical Ability
+      - Verbal Ability
+      - General Information
       
       Technical Requirements:
       - Language: English.
       - Quality: Challenging, Professional Civil Service standard.
-      - Output: A single JSON array containing all ${count} items.
     `;
   }
 
@@ -76,12 +82,13 @@ export const fetchQuestions = async (count: number = 170, specificCategory?: Cat
       },
     });
 
-    const data = JSON.parse(response.text.trim()) as any[];
+    const text = response.text || "[]";
+    const data = JSON.parse(text.trim()) as any[];
     
     return data.map((q, idx) => {
       let category = specificCategory || Category.GENERAL_INFO;
       if (!specificCategory) {
-        const lower = q.category?.toLowerCase() || "";
+        const lower = (q.category || "").toLowerCase();
         if (lower.includes("numerical")) category = Category.NUMERICAL;
         else if (lower.includes("analytical")) category = Category.ANALYTICAL;
         else if (lower.includes("verbal")) category = Category.VERBAL;
@@ -101,11 +108,11 @@ export const fetchQuestions = async (count: number = 170, specificCategory?: Cat
 };
 
 export const fetchReviewerNotes = async (): Promise<ReviewerNote[]> => {
+  const ai = getAI();
   const prompt = `
-    Create a comprehensive, structured study guide/reviewer for the 2026 Philippine Civil Service Professional Examination.
-    Provide summary notes for each of the 4 categories: Numerical Ability, Analytical Ability, Verbal Ability, and General Information.
-    Focus on the most important concepts, formulas, rules (like RA 6713), and strategies for success.
-    Format as a JSON array of objects.
+    Create a comprehensive study guide for the 2026 Philippine Civil Service Professional Examination.
+    Provide summary notes for each of the 4 categories: Numerical, Analytical, Verbal, and General Information.
+    Focus on RA 6713, Constitution, and core math/logic formulas.
   `;
 
   try {
@@ -119,8 +126,8 @@ export const fetchReviewerNotes = async (): Promise<ReviewerNote[]> => {
       },
     });
 
-    const data = JSON.parse(response.text.trim());
-    return data;
+    const text = response.text || "[]";
+    return JSON.parse(text.trim());
   } catch (error) {
     console.error("Error generating reviewer notes:", error);
     throw error;

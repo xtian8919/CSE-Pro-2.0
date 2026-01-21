@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
-import { QuizResults, Category, Question } from '../types';
+import { QuizResults, Category, Question } from '../types.ts';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 interface ResultsViewProps {
   results: QuizResults;
@@ -31,7 +30,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({ results, onRestart, onHome, q
   };
 
   const downloadPDF = async () => {
-    const doc = new jsPDF() as any;
+    const doc = new jsPDF();
     
     // Header
     doc.setFontSize(22);
@@ -62,12 +61,12 @@ const ResultsView: React.FC<ResultsViewProps> = ({ results, onRestart, onHome, q
       ];
     });
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: 55,
       head: [['#', 'Category', 'Question', 'User', 'Correct', 'Explanation']],
       body: tableData,
       theme: 'striped',
-      headStyles: { fillStyle: 'fill', fillColor: [37, 99, 235], textColor: [255, 255, 255] },
+      headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255] },
       columnStyles: {
         0: { cellWidth: 10 },
         1: { cellWidth: 25 },
@@ -79,7 +78,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({ results, onRestart, onHome, q
       styles: { fontSize: 8, overflow: 'linebreak' },
     });
 
-    doc.save(`CSE_Hero_2026_Results_${results.weightedRating.toFixed(2)}.pdf`);
+    doc.save(`CSE_2026_Results_${results.weightedRating.toFixed(2)}.pdf`);
   };
 
   return (
@@ -108,8 +107,8 @@ const ResultsView: React.FC<ResultsViewProps> = ({ results, onRestart, onHome, q
 
           <p className="mt-6 text-slate-600 font-medium leading-relaxed italic">
             {isPassed 
-              ? `Excellent work! You reached the 80% passing threshold for this ${results.isSubtest ? 'subtest' : 'mock exam'}.` 
-              : "A rating of 80% is required for eligibility. Focus on sections where you scored below average to improve your overall weighted rating."}
+              ? `Excellent work! You reached the 80% passing threshold.` 
+              : "A rating of 80% is required for eligibility. Focus on sections where you scored below average to improve your rating."}
           </p>
           
           <div className="mt-8 pt-8 border-t border-slate-100 w-full flex justify-center gap-8">
@@ -159,16 +158,6 @@ const ResultsView: React.FC<ResultsViewProps> = ({ results, onRestart, onHome, q
               );
             })}
           </div>
-
-          {!results.isSubtest && (
-            <div className="mt-8 p-4 bg-slate-50 rounded-xl border border-slate-200">
-              <h4 className="text-xs font-bold text-slate-600 uppercase mb-2">Rating Calculation</h4>
-              <div className="space-y-1 text-[10px] font-mono text-slate-500 leading-tight">
-                <p>(Verbal % × 0.30) + (Analytical % × 0.35) +</p>
-                <p>(Numerical % × 0.30) + (Gen. Info % × 0.05)</p>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -176,21 +165,21 @@ const ResultsView: React.FC<ResultsViewProps> = ({ results, onRestart, onHome, q
         <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
           <button
             onClick={onHome}
-            className="flex-1 max-w-xs py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-black transition-all shadow-xl flex items-center justify-center gap-3 uppercase tracking-widest text-sm"
+            className="flex-1 max-w-xs py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-black transition-all shadow-xl uppercase tracking-widest text-sm"
           >
             Main Menu
           </button>
           <button
             onClick={onRestart}
-            className="flex-1 max-w-xs py-4 border-2 border-slate-900 text-slate-900 font-black rounded-2xl hover:bg-slate-50 transition-all shadow-xl flex items-center justify-center gap-3 uppercase tracking-widest text-sm"
+            className="flex-1 max-w-xs py-4 border-2 border-slate-900 text-slate-900 font-black rounded-2xl hover:bg-slate-50 transition-all shadow-xl uppercase tracking-widest text-sm"
           >
             Retake Set
           </button>
           <button
             onClick={() => setShowCorrections(!showCorrections)}
-            className="flex-1 max-w-xs py-4 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 transition-all shadow-xl flex items-center justify-center gap-3 uppercase tracking-widest text-sm"
+            className="flex-1 max-w-xs py-4 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 transition-all shadow-xl uppercase tracking-widest text-sm"
           >
-            {showCorrections ? 'Hide Corrections' : 'Key to Corrections'}
+            {showCorrections ? 'Hide Key' : 'Review Key'}
           </button>
         </div>
       </div>
@@ -200,7 +189,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({ results, onRestart, onHome, q
           <div className="p-8 border-b border-slate-100 bg-slate-50 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
               <h2 className="text-2xl font-black text-slate-900">Key to Corrections</h2>
-              <p className="text-slate-500 text-sm">Detailed explanation for all {results.total} items</p>
+              <p className="text-slate-500 text-sm">Detailed explanation for all items</p>
             </div>
             <button
               onClick={downloadPDF}
@@ -223,12 +212,6 @@ const ResultsView: React.FC<ResultsViewProps> = ({ results, onRestart, onHome, q
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-full">{q.category}</span>
-                        {!isCorrect && userIdx !== undefined && (
-                          <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest bg-red-50 px-2 py-0.5 rounded-full">Incorrect</span>
-                        )}
-                        {isCorrect && (
-                          <span className="text-[10px] font-bold text-green-500 uppercase tracking-widest bg-green-50 px-2 py-0.5 rounded-full">Correct</span>
-                        )}
                       </div>
                       <p className="text-slate-800 font-semibold mb-4 leading-relaxed">{q.text}</p>
                       

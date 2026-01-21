@@ -1,11 +1,10 @@
-
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Category, Question, QuizResults, AppView, ReviewerNote } from './types';
-import { fetchQuestions, fetchReviewerNotes } from './geminiService';
-import QuestionCard from './components/QuestionCard';
-import ResultsView from './components/ResultsView';
-import ReviewerView from './components/ReviewerView';
-import StrategiesView from './components/StrategiesView';
+import React, { useState, useCallback, useRef } from 'react';
+import { Category, Question, QuizResults, AppView, ReviewerNote } from './types.ts';
+import { fetchQuestions, fetchReviewerNotes } from './geminiService.ts';
+import QuestionCard from './components/QuestionCard.tsx';
+import ResultsView from './components/ResultsView.tsx';
+import ReviewerView from './components/ReviewerView.tsx';
+import StrategiesView from './components/StrategiesView.tsx';
 
 const FULL_MOCK_TIME = (3 * 3600) + (10 * 60); // 3h 10m
 const SUBTEST_TIME = 60 * 60; // 1 hour for 50 items
@@ -146,7 +145,7 @@ const App: React.FC = () => {
     });
 
     Object.values(Category).forEach(cat => {
-      const stats = categoryBreakdown[cat];
+      const stats = categoryBreakdown[cat as Category];
       stats.percentage = stats.total > 0 ? (stats.score / stats.total) * 100 : 0;
     });
 
@@ -154,7 +153,7 @@ const App: React.FC = () => {
     const isSubtest = !!currentTestConfig?.category;
 
     if (isSubtest) {
-      weightedRating = (totalCorrect / questions.length) * 100;
+      weightedRating = (totalCorrect / (questions.length || 1)) * 100;
     } else {
       weightedRating = 
         (categoryBreakdown[Category.VERBAL].percentage * 0.30) +
@@ -209,13 +208,19 @@ const App: React.FC = () => {
         </header>
 
         <main className="flex-1 max-w-6xl mx-auto px-4 py-12 w-full">
+          {error && (
+            <div className="mb-8 p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-center font-bold">
+              {error}
+              <button onClick={() => setError(null)} className="ml-4 underline text-sm">Dismiss</button>
+            </div>
+          )}
+
           <div className="text-center mb-12">
             <h2 className="text-4xl font-black text-slate-900 mb-4">Select Your Study Mode</h2>
             <p className="text-slate-500 max-w-xl mx-auto">Comprehensive practice tools designed for the 2026 Professional Level Examination. Aim for 80% to pass!</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Full Mock Test */}
             <button 
               onClick={() => startTest(170)}
               className="group relative bg-slate-900 p-8 rounded-[2rem] text-left transition-all hover:scale-[1.02] hover:shadow-2xl overflow-hidden md:col-span-2 lg:col-span-1"
@@ -231,7 +236,6 @@ const App: React.FC = () => {
               <div className="absolute top-0 right-0 p-8 opacity-10 text-white text-8xl font-black select-none group-hover:rotate-12 transition-transform">170</div>
             </button>
 
-            {/* Category Tests */}
             <div className="grid grid-cols-2 gap-4 md:col-span-2">
               <button onClick={() => startTest(50, Category.NUMERICAL)} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all text-left group">
                 <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-4 text-2xl font-bold group-hover:bg-emerald-600 group-hover:text-white transition-colors">🔢</div>
@@ -258,7 +262,6 @@ const App: React.FC = () => {
               </button>
             </div>
 
-            {/* Reviewer Notes */}
             <button 
               onClick={openReviewer}
               className="bg-blue-600 p-8 rounded-[2rem] text-left transition-all hover:scale-[1.02] hover:shadow-2xl overflow-hidden group"
@@ -272,7 +275,6 @@ const App: React.FC = () => {
               </div>
             </button>
 
-            {/* Strategies Guide */}
             <button 
               onClick={() => setView('strategies')}
               className="bg-slate-800 p-8 rounded-[2rem] text-left transition-all hover:scale-[1.02] hover:shadow-2xl overflow-hidden group lg:col-span-2"
@@ -297,22 +299,17 @@ const App: React.FC = () => {
                 <p className="text-slate-600 text-sm">Focus your efforts on Analytical, Numerical and Verbal sections, which collectively account for 95% of your final weighted rating.</p>
              </div>
              <div className="flex gap-4">
-                <div className="text-center bg-white p-4 rounded-3xl w-24 border border-blue-100">
-                   <p className="text-2xl font-black text-blue-600">30%</p>
-                   <p className="text-[10px] font-bold text-slate-400 uppercase">Verbal</p>
-                </div>
-                <div className="text-center bg-white p-4 rounded-3xl w-24 border border-blue-100">
-                   <p className="text-2xl font-black text-purple-600">35%</p>
-                   <p className="text-[10px] font-bold text-slate-400 uppercase">Analytical</p>
-                </div>
-                <div className="text-center bg-white p-4 rounded-3xl w-24 border border-blue-100">
-                   <p className="text-2xl font-black text-emerald-600">30%</p>
-                   <p className="text-[10px] font-bold text-slate-400 uppercase">Numerical</p>
-                </div>
-                 <div className="text-center bg-white p-4 rounded-3xl w-24 border border-blue-100">
-                   <p className="text-2xl font-black text-orange-600">5%</p>
-                   <p className="text-[10px] font-bold text-slate-400 uppercase">Gen Info</p>
-                </div>
+                {[
+                  { label: "Verbal", val: "30%", color: "blue" },
+                  { label: "Analytic", val: "35%", color: "purple" },
+                  { label: "Numeric", val: "30%", color: "emerald" },
+                  { label: "Gen Info", val: "5%", color: "orange" }
+                ].map(stat => (
+                  <div key={stat.label} className="text-center bg-white p-4 rounded-3xl w-20 md:w-24 border border-blue-100">
+                    <p className={`text-xl md:text-2xl font-black text-${stat.color}-600`}>{stat.val}</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase">{stat.label}</p>
+                  </div>
+                ))}
              </div>
           </div>
         </main>
@@ -345,13 +342,13 @@ const App: React.FC = () => {
   }
 
   const currentQuestion = questions[currentIndex];
-  const progress = ((currentIndex + 1) / questions.length) * 100;
+  const progress = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
   const isTimeLow = timeLeft < (15 * 60);
   const unansweredCount = questions.length - Object.keys(userAnswers).length;
 
   return (
     <div className="min-h-screen bg-slate-50 pb-24 font-sans">
-      <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm px-4 py-3 md:py-4">
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm px-4 py-3 md:py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={() => { if(confirm("End test and return to menu?")) setView('menu'); }} className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black hover:bg-slate-900 transition-colors">
@@ -384,8 +381,8 @@ const App: React.FC = () => {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 pt-6 md:pt-10">
-        <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-xl border border-slate-100 relative">
-          <div className="absolute top-6 right-6 flex flex-col items-end gap-2">
+        <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-xl border border-slate-100 relative overflow-hidden">
+          <div className="absolute top-6 right-6 flex flex-col items-end gap-2 z-10">
              <button 
                 onClick={() => setIsNavOpen(!isNavOpen)}
                 className="text-xs font-bold text-slate-400 hover:text-blue-600 transition-colors uppercase flex items-center gap-1"
@@ -394,12 +391,12 @@ const App: React.FC = () => {
                Jump to Item
              </button>
              <label className="flex items-center gap-2 cursor-pointer group">
-                <span className="text-[10px] font-bold text-slate-400 uppercase group-hover:text-blue-600 transition-colors">Skip Answered</span>
+                <span className="text-[10px] font-bold text-slate-400 group-hover:text-blue-600 transition-colors">Skip Answered</span>
                 <input 
                   type="checkbox" 
                   checked={reviewUnansweredOnly}
                   onChange={(e) => setReviewUnansweredOnly(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 transition-all"
+                  className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
                 />
              </label>
           </div>
@@ -412,7 +409,7 @@ const App: React.FC = () => {
                     key={idx}
                     onClick={() => { setCurrentIndex(idx); setIsNavOpen(false); }}
                     className={`aspect-square text-[10px] font-bold rounded-lg flex items-center justify-center border transition-all ${
-                      currentIndex === idx ? 'bg-blue-600 text-white border-blue-600 scale-110 z-10 shadow-lg shadow-blue-200' : 
+                      currentIndex === idx ? 'bg-blue-600 text-white border-blue-600 scale-110 z-10 shadow-lg' : 
                       userAnswers[questions[idx].id] !== undefined ? 'bg-green-100 text-green-700 border-green-200' :
                       'bg-white text-slate-400 border-slate-200 hover:border-blue-300'
                     }`}
@@ -424,19 +421,21 @@ const App: React.FC = () => {
             </div>
           )}
 
-          <QuestionCard
-            question={currentQuestion}
-            itemNumber={currentIndex + 1}
-            totalItems={questions.length}
-            selectedOption={userAnswers[currentQuestion.id] ?? null}
-            onSelect={handleSelectOption}
-            showFeedback={showFeedback}
-          />
+          {questions.length > 0 && (
+            <QuestionCard
+              question={questions[currentIndex]}
+              itemNumber={currentIndex + 1}
+              totalItems={questions.length}
+              selectedOption={userAnswers[questions[currentIndex].id] ?? null}
+              onSelect={handleSelectOption}
+              showFeedback={showFeedback}
+            />
+          )}
 
           <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-slate-100">
             <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
               <button 
-                disabled={currentIndex === 0 && (!reviewUnansweredOnly || findNextAvailable('backward', currentIndex) === null)} 
+                disabled={currentIndex === 0} 
                 onClick={handlePrev} 
                 className="flex-1 sm:flex-none px-6 py-3 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 disabled:opacity-30 transition-colors text-sm uppercase flex items-center justify-center gap-2"
               >
@@ -445,7 +444,7 @@ const App: React.FC = () => {
               </button>
               
               <button 
-                disabled={currentIndex === questions.length - 1 && (!reviewUnansweredOnly || findNextAvailable('forward', currentIndex) === null)}
+                disabled={currentIndex === questions.length - 1}
                 onClick={handleNext}
                 className="flex-1 sm:flex-none px-6 py-3 bg-slate-100 text-slate-500 font-bold rounded-xl hover:bg-slate-200 transition-colors text-sm uppercase flex items-center justify-center gap-2"
               >
@@ -462,11 +461,11 @@ const App: React.FC = () => {
             </div>
 
             <button 
-              disabled={userAnswers[currentQuestion.id] === undefined} 
+              disabled={questions.length > 0 && userAnswers[questions[currentIndex].id] === undefined} 
               onClick={handleNext} 
               className="w-full sm:w-auto px-12 py-3 bg-blue-600 text-white font-black rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-all shadow-lg uppercase text-sm tracking-widest flex items-center justify-center gap-2"
             >
-              {currentIndex === questions.length - 1 && !reviewUnansweredOnly ? 'Submit Set' : 'Next Item'}
+              {currentIndex === questions.length - 1 ? 'Finish' : 'Next'}
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
             </button>
           </div>
